@@ -1,9 +1,10 @@
+# http://127.0.0.1:5001/sync_data
 from flask import Flask
 import requests
 import json
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 import schedule
 import time
 from threading import Thread
