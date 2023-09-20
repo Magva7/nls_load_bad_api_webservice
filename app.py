@@ -1,14 +1,12 @@
-# http://127.0.0.1:5001/sync_data
+import asyncio
 from flask import Flask
-import requests
 import json
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 import schedule
-import time
-from threading import Thread
 import os
+import aiohttp
 
 app = Flask(__name__)
 
@@ -28,17 +26,19 @@ class MyData(Base):
 
     id = Column(Integer, primary_key=True)
     primary_key_field = Column(String)
-    # Тут потом если надо добавим еще поля
+    # Тут потом, если надо, добавим еще поля
 
 # Роут для синхронизации данных
 @app.route('/sync_data', methods=['GET'])
-def sync_data():
-    api_url = 'https://example.com/api/data'
+async def sync_data():
+    '''Функция синхронизации sync_data выполняется асинхронно'''
+    api_url = 'https://google.com/api/data'
 
     try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        data_from_api = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as response:
+                response.raise_for_status()
+                data_from_api = await response.json()
 
         # Получаем данные из БД
         session = Session()
@@ -69,26 +69,21 @@ def sync_data():
         session.close()
 
         return "Data synchronization completed"
-    except requests.exceptions.RequestException as e:
+    except aiohttp.ClientError as e:
         return f"Error: {e}"
     except json.JSONDecodeError as e:
         return f"Error decoding JSON: {e}"
 
-# функция для запуска функции синхронизации    
-def run_sync_task():
-    sync_data()
-
-# запускаем функция для запуска функции синхронизации раз в минуту
-def schedule_loop():
+# Запускаем цикл для выполнения задач в фоновом режиме
+async def schedule_loop():
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        await asyncio.sleep(1)
 
 if __name__ == '__main__':
-    # Создаем поток для выполнения цикла с расписанием
-    schedule_thread = Thread(target=schedule_loop)
-    schedule_thread.start()
+    loop = asyncio.get_event_loop()
+    loop.create_task(schedule_loop())
 
     # Запуск Flask сервера
-    # app.run(debug=True)
     app.run(host='0.0.0.0', port=5001)  # 5001 порт для отладки
+
