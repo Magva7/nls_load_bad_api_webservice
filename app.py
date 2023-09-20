@@ -8,11 +8,14 @@ from sqlalchemy.orm import declarative_base
 import schedule
 import time
 from threading import Thread
+import os
 
 app = Flask(__name__)
 
 # Настройки БД - url, логин-пасс
-DATABASE_URL = "postgresql://username:password@localhost/mydatabase"
+username = os.getenv('username_for_sql')
+password = os.getenv('password_for_sql')
+DATABASE_URL = f"postgresql://{username}:{password}@localhost/mydatabase"
 
 # Создаем объект для работы с БД
 engine = create_engine(DATABASE_URL)
