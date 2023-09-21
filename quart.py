@@ -1,5 +1,5 @@
 import asyncio
-from flask import Flask
+from quart import Quart, request, jsonify
 import json
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
@@ -9,7 +9,7 @@ import os
 import aiohttp
 import logging
 
-app = Flask(__name__)
+app = Quart(__name__)
 
 # Настройки БД - url, логин-пасс
 username = os.getenv('username_for_sql')
@@ -40,6 +40,7 @@ async def sync_data():
             async with session.get(api_url) as response:
                 response.raise_for_status()
                 data_from_api = await response.json()
+        await asyncio.sleep(1)
 
         # Получаем данные из БД
         session = Session()
@@ -77,30 +78,27 @@ async def sync_data():
 
         logging.info("Data synchronization completed")
         return "Data synchronization completed"
-    except aiohttp.ClientError as e:
-        return f"Error: {e}"
-    except json.JSONDecodeError as e:
-        return f"Error decoding JSON: {e}"
 
 # Запускаем цикл для выполнения задач в фоновом режиме
 async def schedule_loop():
     while True:
-        schedule.run_pending()
+        try:
+            schedule.run_pending()
+        except Exception as e:
+            logging.error(f"Ошибка в schedule_loop: {e}")
         await asyncio.sleep(1)
 
+
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(schedule_loop())
+
+    # Запуск Quart сервера
     try:
-        loop = asyncio.get_event_loop()
-        loop.create_task(schedule_loop())
-
-        print('test2')
-        # Запуск Flask сервера
         app.run(host='0.0.0.0', port=5001, use_reloader=False)  # 5001 порт для отладки
-
-        # Настройки логирования после запуска Flask
-        print('test1')
-        logging.basicConfig(filename=r'F:\nls_load_bad_api_webservice\app.log', level=logging.INFO)
-        logging.info('Flask запущен успешно')
-        print('Flask запущен успешно')
     except Exception as e:
-        logging.error(f"Ошибка при запуске Flask: {e}")
+        logging.error(f"Ошибка при запуске Quart: {e}")
+
+    # Настройки логирования после запуска Quart
+    logging.basicConfig(filename='app.log', level=logging.INFO)
+    logging.info('Quart запущен успешно')
