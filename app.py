@@ -42,31 +42,36 @@ async def sync_data():
 
         # Получаем данные из БД
         session = Session()
-        existing_data = session.query(MyData).all()
+        try:
+            existing_data = session.query(MyData).all()
 
-        # Создаем набор primary key значений для сравнения
-        existing_primary_keys = set(obj.primary_key_field for obj in existing_data)
-        api_primary_keys = set(obj['primary_key_field'] for obj in data_from_api)
+            # Создаем набор primary key значений для сравнения
+            existing_primary_keys = set(obj.primary_key_field for obj in existing_data)
+            api_primary_keys = set(obj['primary_key_field'] for obj in data_from_api)
 
-        # Ищем объекты, которые есть в JSON, но нет в базе БД, и создаем их
-        new_objects = [MyData(primary_key_field=obj['primary_key_field']) for obj in data_from_api if obj['primary_key_field'] not in existing_primary_keys]
-        session.add_all(new_objects)
+            # Ищем объекты, которые есть в JSON, но нет в базе БД, и создаем их
+            new_objects = [MyData(primary_key_field=obj['primary_key_field']) for obj in data_from_api if obj['primary_key_field'] not in existing_primary_keys]
+            session.add_all(new_objects)
 
-        # Обновляем строки данных там, где что-то поменялось
-        for obj in data_from_api:
-            if obj['primary_key_field'] in existing_primary_keys:
-                existing_obj = session.query(MyData).filter_by(primary_key_field=obj['primary_key_field']).first()
-                for key, value in obj.items():
-                    if key != 'primary_key_field' and getattr(existing_obj, key) != value:
-                        setattr(existing_obj, key, value)
+            # Обновляем строки данных там, где что-то поменялось
+            for obj in data_from_api:
+                if obj['primary_key_field'] in existing_primary_keys:
+                    existing_obj = session.query(MyData).filter_by(primary_key_field=obj['primary_key_field']).first()
+                    for key, value in obj.items():
+                        if key != 'primary_key_field' and getattr(existing_obj, key) != value:
+                            setattr(existing_obj, key, value)
 
-        # Помечаем на удаление записи, которые есть в БД, но их нет в json
-        for obj in existing_data:
-            if obj.primary_key_field not in api_primary_keys:
-                session.delete(obj)
+            # Помечаем на удаление записи, которые есть в БД, но их нет в json
+            for obj in existing_data:
+                if obj.primary_key_field not in api_primary_keys:
+                    session.delete(obj)
 
-        session.commit()
-        session.close()
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
 
         return "Data synchronization completed"
     except aiohttp.ClientError as e:
@@ -86,4 +91,4 @@ if __name__ == '__main__':
 
     # Запуск Flask сервера
     app.run(host='0.0.0.0', port=5001)  # 5001 порт для отладки
-
+0
