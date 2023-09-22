@@ -1,5 +1,5 @@
 import asyncio
-from flask import Flask
+from flask import Flask, jsonify
 import json
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
@@ -31,51 +31,55 @@ class MyData(Base):
 
 # Роут для синхронизации данных
 @app.route('/sync_data', methods=['GET'])
-async def sync_data():
-    '''Функция синхронизации sync_data выполняется асинхронно'''
+def sync_data():
+    '''Функция синхронизации sync_data'''
     api_url = 'https://google.com/api/data'
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url) as response:
-                response.raise_for_status()
-                data_from_api = await response.json()
+        async def async_sync_data():
+            async with aiohttp.ClientSession() as session:
+                async with session.get(api_url) as response:
+                    response.raise_for_status()
+                    data_from_api = await response.json()
 
-        # Получаем данные из БД
-        session = Session()
-        try:
-            existing_data = session.query(MyData).all()
+            # Получаем данные из БД
+            session = Session()
+            try:
+                existing_data = session.query(MyData).all()
 
-            # Создаем набор primary key значений для сравнения
-            existing_primary_keys = set(obj.primary_key_field for obj in existing_data)
-            api_primary_keys = set(obj['primary_key_field'] for obj in data_from_api)
+                # Создаем набор primary key значений для сравнения
+                existing_primary_keys = set(obj.primary_key_field for obj in existing_data)
+                api_primary_keys = set(obj['primary_key_field'] for obj in data_from_api)
 
-            # Ищем объекты, которые есть в JSON, но нет в базе БД, и создаем их
-            new_objects = [MyData(primary_key_field=obj['primary_key_field']) for obj in data_from_api if obj['primary_key_field'] not in existing_primary_keys]
-            session.add_all(new_objects)
+                # Ищем объекты, которые есть в JSON, но нет в базе БД, и создаем их
+                new_objects = [MyData(primary_key_field=obj['primary_key_field']) for obj in data_from_api if obj['primary_key_field'] not in existing_primary_keys]
+                session.add_all(new_objects)
 
-            # Обновляем строки данных там, где что-то поменялось
-            for obj in data_from_api:
-                if obj['primary_key_field'] in existing_primary_keys:
-                    existing_obj = session.query(MyData).filter_by(primary_key_field=obj['primary_key_field']).first()
-                    for key, value in obj.items():
-                        if key != 'primary_key_field' and getattr(existing_obj, key) != value:
-                            setattr(existing_obj, key, value)
+                # Обновляем строки данных там, где что-то поменялось
+                for obj in data_from_api:
+                    if obj['primary_key_field'] in existing_primary_keys:
+                        existing_obj = session.query(MyData).filter_by(primary_key_field=obj['primary_key_field']).first()
+                        for key, value in obj.items():
+                            if key != 'primary_key_field' and getattr(existing_obj, key) != value:
+                                setattr(existing_obj, key, value)
 
-            # Помечаем на удаление записи, которые есть в БД, но их нет в json
-            for obj in existing_data:
-                if obj.primary_key_field not in api_primary_keys:
-                    session.delete(obj)
+                # Помечаем на удаление записи, которые есть в БД, но их нет в json
+                for obj in existing_data:
+                    if obj.primary_key_field not in api_primary_keys:
+                        session.delete(obj)
 
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            logging.error(f"Ошибка: {e}")
-            raise e
-        finally:
-            session.close()
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                logging.error(f"Ошибка: {e}")
+                raise e
+            finally:
+                session.close()
 
-        logging.info("Data synchronization completed")
+            logging.info("Data synchronization completed")
+            await asyncio.sleep(1)
+
+        asyncio.run(async_sync_data())
         return "Data synchronization completed"
     except aiohttp.ClientError as e:
         return f"Error: {e}"
@@ -89,18 +93,15 @@ async def schedule_loop():
         await asyncio.sleep(1)
 
 if __name__ == '__main__':
-    try:
-        loop = asyncio.get_event_loop()
-        loop.create_task(schedule_loop())
+    loop = asyncio.get_event_loop()
+    loop.create_task(schedule_loop())
 
-        print('test2')
-        # Запуск Flask сервера
-        app.run(host='0.0.0.0', port=5001, use_reloader=False)  # 5001 порт для отладки
+    print('test2')
+    # Запуск Flask сервера
+    # app.run(host='0.0.0.0', port=5001, use_reloader=False)  # 5001 порт для отладки
 
-        # Настройки логирования после запуска Flask
-        print('test1')
-        logging.basicConfig(filename=r'F:\nls_load_bad_api_webservice\app.log', level=logging.INFO)
-        logging.info('Flask запущен успешно')
-        print('Flask запущен успешно')
-    except Exception as e:
-        logging.error(f"Ошибка при запуске Flask: {e}")
+    # Настройки логирования после запуска Flask
+    print('test1')
+    logging.basicConfig(filename='app.log', level=logging.INFO)
+    logging.info('Flask запущен успешно')
+    print('Flask запущен успешно')
