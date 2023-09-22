@@ -1,3 +1,18 @@
 INFO:hypercorn.error:Running on http://0.0.0.0:5001 (CTRL + C to quit)
 INFO:hypercorn.error:Running on http://0.0.0.0:5001 (CTRL + C to quit)
 ERROR:root:Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
+INFO:hypercorn.error:Running on http://0.0.0.0:5001 (CTRL + C to quit)
+ERROR:root:Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
+2023-09-23 02:15:46,626 - hypercorn.error - INFO - Running on http://0.0.0.0:5001 (CTRL + C to quit)
+2023-09-23 02:16:01,337 - root - INFO - Hello, World!
+2023-09-23 02:16:04,095 - root - ERROR - Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
+2023-09-23 02:16:09,197 - root - ERROR - Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
+2023-09-23 02:16:10,310 - root - INFO - Hello, World!
+2023-09-23 02:17:06,649 - Running on http://0.0.0.0:5001 (CTRL + C to quit)
+2023-09-23 02:17:10,801 - Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
+2023-09-23 02:19:08,044 - Running on http://0.0.0.0:5001 (CTRL + C to quit)
+2023-09-23 02:19:28,286 - INFO - Running on http://0.0.0.0:5001 (CTRL + C to quit)
+2023-09-23 02:19:32,259 - ERROR - Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
+2023-09-23 02:20:55,008 - hypercorn.error - INFO - Running on http://0.0.0.0:5001 (CTRL + C to quit)
+2023-09-23 02:20:58,951 - root - INFO - Hello, World!
+2023-09-23 02:21:00,817 - root - ERROR - Ошибка: 404, message='Not Found', url=URL('https://google.com/api/data')
