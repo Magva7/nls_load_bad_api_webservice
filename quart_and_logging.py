@@ -27,9 +27,12 @@ engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
+table_name = 'mydata'
+
 # Определяем модели данных
 class MyData(Base):
-    __tablename__ = 'mydata'
+    # __tablename__ = 'mydata'
+    __tablename__ = table_name
 
     id = Column(Integer, primary_key=True)
     primary_key_field = Column(String)
