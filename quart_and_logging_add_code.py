@@ -1,5 +1,6 @@
-import asyncio
+import logging
 from quart import Quart
+import asyncio
 import json
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
@@ -7,9 +8,11 @@ from sqlalchemy.orm import declarative_base
 import schedule
 import os
 import aiohttp
-import logging
 
 app = Quart(__name__)
+
+# logging.basicConfig(level=logging.DEBUG)  # Установка уровня логирования на DEBUG (временно)
+logging.basicConfig(filename='app.log', level=logging.INFO)  # Здесь указываем имя файла для логов
 
 # Настройки БД - url, логин-пасс
 username = os.getenv('username_for_sql')
@@ -29,12 +32,13 @@ class MyData(Base):
     primary_key_field = Column(String)
     # Тут потом, если надо, добавим еще поля
 
-# Асинхронная функция для получения данных
-async def async_get_data():
-    await asyncio.sleep(1)
-    return 'Done!'
+# базовый маршрут для проверки, что все работает - 127.0.0.1:5001
+@app.route('/')
+async def hello_world():
+    logging.info("Hello, World!")  # Логируем сообщение
+    return 'Hello, World!'
 
-# Роут для синхронизации данных
+# Маршрут для синхронизации данных - http://127.0.0.1:5001/sync_data
 @app.route('/sync_data', methods=['GET'])
 async def sync_data():
     '''Функция синхронизации sync_data выполняется асинхронно'''
@@ -81,38 +85,19 @@ async def sync_data():
             session.close()
 
         logging.info("Data synchronization completed")
+        await asyncio.sleep(1)
         return "Data synchronization completed"
     except aiohttp.ClientError as e:
+        logging.error(f"Ошибка: {e}")
         return f"Error: {e}"
     except json.JSONDecodeError as e:
+        logging.error(f"Error decoding JSON: : {e}")
         return f"Error decoding JSON: {e}"
 
-# Запускаем цикл для выполнения задач в фоновом режиме
-async def schedule_loop():
-    while True:
-        try:
-            schedule.run_pending()
-        except Exception as e:
-            logging.error(f"Ошибка в schedule_loop: {e}")
-        await asyncio.sleep(1)
-
-
-@app.route("/data")
-async def get_data():
-    data = await async_get_data()
-    return data
+# Функция для запуска Quart и цикла событий asyncio
+async def main():
+    await app.run_task(host='0.0.0.0', port=5001)
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.create_task(schedule_loop())
-
-    # Запуск Quart сервера
-    try:
-        app.run(host='0.0.0.0', port=5001, use_reloader=False)  # 5001 порт для отладки
-    except Exception as e:
-        logging.error(f"Ошибка при запуске Quart: {e}")
-
-    # Настройки логирования после запуска Quart
-    # logging.basicConfig(filename='app.log', level=logging.INFO)
-    logging.basicConfig(filename=r'D:\nls_load_bad_api_webservice\app.log', level=logging.INFO, filemode='w')
-    logging.info('Quart запущен успешно')
+    loop.run_until_complete(main())
