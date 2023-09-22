@@ -5,14 +5,13 @@ import json
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
-import schedule
 import os
 import aiohttp
 
 app = Quart(__name__)
 
 # Установка секретного ключа Flask
-app.secret_key = 'my_secret_key'
+app.secret_key = os.getenv('secret_key_for_app')
 
 # logging.basicConfig(level=logging.DEBUG)  # Установка уровня логирования на DEBUG (временно)
 logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -102,8 +101,17 @@ async def sync_data():
 
 # Функция для запуска Quart и цикла событий asyncio
 async def main():
+    # Запускаем Quart приложение
     await app.run_task(host='0.0.0.0', port=5001)
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
+    # loop = asyncio.get_event_loop()
+    
+    # это не обязательно, 2 строки ниже можно закомментировать и оставить только ту, что выше,
+    # сейчас работает и так, но предыдущую строку закомментил и переписал так, 
+    # т.к. на Python 3.10 строка, которая выше еще пашет, а на 3.11 уже не будет, лучше сразу так написать, 
+    # чтобы предупреждения о том, что нет активного цикла не было - DeprecationWarning: There is no current event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     loop.run_until_complete(main())
