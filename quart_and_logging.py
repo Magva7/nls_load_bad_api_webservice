@@ -30,7 +30,6 @@ table_name = 'mydata'
 
 # Определяем модели данных
 class MyData(Base):
-    # __tablename__ = 'mydata'
     __tablename__ = table_name
 
     id = Column(Integer, primary_key=True)
@@ -46,7 +45,6 @@ async def hello_world():
 # Маршрут для синхронизации данных - http://127.0.0.1:5001/sync_data
 @app.route('/sync_data', methods=['GET'])
 async def sync_data():
-    '''Функция синхронизации sync_data выполняется асинхронно'''
     api_url = 'https://google.com/api/data'
 
     try:
@@ -108,8 +106,8 @@ if __name__ == '__main__':
     # loop = asyncio.get_event_loop()
     
     # это не обязательно, 2 строки ниже можно закомментировать и оставить только ту, что выше,
-    # сейчас работает и так, но предыдущую строку закомментил и переписал так, 
-    # т.к. на Python 3.10 строка, которая выше еще пашет, а на 3.11 уже не будет, лучше сразу так написать, 
+    # в текущей версии работает и так, но предыдущую строку я закомментил и переписал
+    # т.к. на Python 3.10 строка, которая выше еще работает, а на 3.11 уже не будет, лучше сразу так написать, 
     # чтобы предупреждения о том, что нет активного цикла не было - DeprecationWarning: There is no current event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
